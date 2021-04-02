@@ -15,9 +15,11 @@ import matplotlib.animation as animation
 from IPython.display import HTML
 from time import time 
 
-image_size = 64
+image_size = 128
 
-epochs = 100
+colour = 3
+
+epochs = 200
 
 batch_size = 12
 
@@ -42,18 +44,21 @@ data_loader = DataLoader(dataset = data, batch_size = batch_size, shuffle = True
 class Generator(nn.Module):
 	def __init__(self, latent_dim):
 		super(Generator, self).__init__()
-		output_dim = image_size * image_size * 3
+		output_dim = image_size * image_size * colour
 		self.latent_dim = latent_dim 
 		
 		self.main = nn.Sequential(
 			nn.Linear(latent_dim, 256),
 			nn.LeakyReLU(),
-
+			nn.BatchNorm1d(256),
+			
 			nn.Linear(256, 512),
 			nn.LeakyReLU(),
+			nn.BatchNorm1d(512),
 
 			nn.Linear(512, 1024),
 			nn.LeakyReLU(),
+			nn.BatchNorm1d(1024),
 
 			nn.Linear(1024, output_dim),
 			nn.Tanh()
@@ -70,20 +75,20 @@ class  Discriminator(nn.Module):
 	def __init__(self):
 		super(Discriminator, self).__init__()
 
-		input_dim = image_size * image_size * 3
+		input_dim = image_size * image_size * colour
 		output_dim = 1
 		self.main = nn.Sequential(
 			nn.Linear(input_dim, 1024),
 			nn.LeakyReLU(),
-			nn.Dropout(0.3),
+			#nn.BatchNorm1d(1024),#nn.Dropout(0.3),
 						
 			nn.Linear(1024, 512),
 			nn.LeakyReLU(),
-			nn.Dropout(0.3),
+			#nn.BatchNorm1d(512), #nn.Dropout(0.3),
 						
 			nn.Linear(512, 256),
 			nn.LeakyReLU(),
-			nn.Dropout(0.3),
+			#nn.BatchNorm1d(256), #nn.Dropout(0.3),
 						
 			nn.Linear(256, output_dim),
 			nn.Sigmoid()
@@ -105,7 +110,7 @@ class  Discriminator(nn.Module):
 
 
 class VanillaGAN():
-	def __init__(self, generator, discriminator, lr_d=1e-3, lr_g=2e-4):
+	def __init__(self, generator, discriminator, lr_d=0.0002, lr_g=0.001):
 		self.generator = generator.to(DEVICE)
 		self.discriminator = discriminator.to(DEVICE)
 		self.criterion = nn.BCELoss()
@@ -193,6 +198,7 @@ for epoch in range(epochs):
 		fixed_noise = create_noise(batch_size)
 		with torch.no_grad():
 			fake = generator(fixed_noise).detach().cpu()
+			fake = fake.view(fake.size(0), colour, image_size, image_size)
 		img_list.append(vutils.make_grid(fake, padding=2, normalize=True))
 
 #---------------------------------------------------------
@@ -201,11 +207,6 @@ for epoch in range(epochs):
 generator.eval()
 torch.save(generator.state_dict(), 'generator.pth')
 print("generator saved.")
-
-"""noise = create_noise(batch_size)
-generated_img = generator(noise).detach()
-generated_img = make_grid(generated_img)
-save_image(generated_img, "images.png")"""
 
 fig = plt.figure(figsize=(8,8))
 plt.axis("off")
