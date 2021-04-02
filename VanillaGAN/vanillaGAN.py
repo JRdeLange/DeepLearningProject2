@@ -8,15 +8,16 @@ import argparse
 import os
 import random
 import torchvision.utils as vutils
+from torchvision.utils import make_grid, save_image
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from IPython.display import HTML
 from time import time 
 
-image_size = 128
+image_size = 64
 
-epochs = 1
+epochs = 100
 
 batch_size = 12
 
@@ -188,8 +189,8 @@ for epoch in range(epochs):
 			f" Dr={loss_d_real[-1]:.3f},"
 			f" Df={loss_d_fake[-1]:.3f}")
 
-	if (epoch % 500 == 0) or ((epoch == epochs-1) and (i == len(dataloader)-1)):
-		fixed_noise = create_noise(8)
+	if (epoch % 500 == 0) or ((epoch == epochs-1) and (i == len(data_loader)-1)):
+		fixed_noise = create_noise(batch_size)
 		with torch.no_grad():
 			fake = generator(fixed_noise).detach().cpu()
 		img_list.append(vutils.make_grid(fake, padding=2, normalize=True))
@@ -201,10 +202,16 @@ generator.eval()
 torch.save(generator.state_dict(), 'generator.pth')
 print("generator saved.")
 
+"""noise = create_noise(batch_size)
+generated_img = generator(noise).detach()
+generated_img = make_grid(generated_img)
+save_image(generated_img, "images.png")"""
+
 fig = plt.figure(figsize=(8,8))
 plt.axis("off")
 ims = [[plt.imshow(np.transpose(i,(1,2,0)), animated=True)] for i in img_list]
 ani = animation.ArtistAnimation(fig, ims, interval=1000, repeat_delay=1000, blit=True)
+plt.savefig("images1")
 plt.show()
 
 HTML(ani.to_jshtml())
@@ -212,4 +219,4 @@ HTML(ani.to_jshtml())
 plt.figure(figsize=(15,15))
 plt.axis("off")
 plt.imshow(np.transpose(img_list[-1],(1,2,0)))
-plt.show()
+plt.savefig("images")
