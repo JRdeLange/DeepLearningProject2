@@ -7,22 +7,23 @@ from torchvision import datasets, transforms
 import argparse
 import os
 import random
+#import torchvision.utils as vutils
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from IPython.display import HTML
 from time import time 
 
-image_size = 64
+image_size = 128
 
 epochs = 1
 
-batch_size = 32
+batch_size = 24
 
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 # data 
-root_path = "archive/front/"
+root_path = "data/"
 
 transform = transforms.Compose([
 	transforms.Resize((image_size, image_size)),
@@ -31,7 +32,7 @@ transform = transforms.Compose([
 	)
 
 data = datasets.ImageFolder(root = root_path, transform=transform)
-data_loader = DataLoader(dataset = data, batch_size = batch_size, shuffle = True, drop_last = False)
+data_loader = DataLoader(dataset = data, batch_size = batch_size, shuffle = True)
 
 #---------------------------------------------------------
 #---------------------------------------------------------
@@ -89,9 +90,13 @@ class  Discriminator(nn.Module):
 
 
 	def forward(self, input_tensor):
-		input_tensor = input_tensor.view(batch_size, -1)
-		intermediate = self.main(input_tensor)
+		i = input_tensor.view(input_tensor.size(0), -1)
+		#print(i.size())
+		#input_tensor = input_tensor.view(batch_size, -1)
+		#print(input_tensor.size())
+		intermediate = self.main(i)
 		return intermediate
+
 
 #---------------------------------------------------------
 #---------------------------------------------------------
@@ -128,8 +133,9 @@ class VanillaGAN():
 
 	def train_step_discriminator(self, images):
 		self.discriminator.zero_grad()
-
+		#print(images.size())
 		real_samples = images.to(DEVICE)
+		#print(real_samples.size())
 		pred_real = self.discriminator(real_samples)
 		loss_real = self.criterion(pred_real, self.target_ones)
 
@@ -165,7 +171,7 @@ start = time()
 for epoch in range(epochs):
 
 	loss_g_running, loss_d_real_running, loss_d_fake_running = 0, 0, 0
-
+	
 	for i, images in enumerate(data_loader, 0):
 		lg_, (ldr_, ldf_) = gan.train_step(images[0])
 		loss_g_running += lg_
@@ -182,8 +188,9 @@ for epoch in range(epochs):
 			f" Df={loss_d_fake[-1]:.3f}")
 
 	if (epoch % 500 == 0) or ((epoch == epochs-1) and (i == len(dataloader)-1)):
+		fixed_noise = create_noise(8)
 		with torch.no_grad():
-			fake = netG(fixed_noise).detach().cpu()
+			fake = generator(fixed_noise).detach().cpu()
 		img_list.append(vutils.make_grid(fake, padding=2, normalize=True))
 
 
@@ -194,3 +201,4 @@ plt.axis("off")
 ims = [[plt.imshow(np.transpose(i,(1,2,0)), animated=True)] for i in img_list]
 ani = animation.ArtistAnimation(fig, ims, interval=1000, repeat_delay=1000, blit=True)
 HTML(ani.to_jshtml())
+
