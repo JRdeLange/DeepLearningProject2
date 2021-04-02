@@ -7,7 +7,7 @@ from torchvision import datasets, transforms
 import argparse
 import os
 import random
-#import torchvision.utils as vutils
+import torchvision.utils as vutils
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
@@ -18,7 +18,7 @@ image_size = 128
 
 epochs = 1
 
-batch_size = 24
+batch_size = 12
 
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -32,7 +32,7 @@ transform = transforms.Compose([
 	)
 
 data = datasets.ImageFolder(root = root_path, transform=transform)
-data_loader = DataLoader(dataset = data, batch_size = batch_size, shuffle = True)
+data_loader = DataLoader(dataset = data, batch_size = batch_size, shuffle = True, drop_last = True)
 
 #---------------------------------------------------------
 #---------------------------------------------------------
@@ -168,6 +168,7 @@ gan = VanillaGAN(generator, discriminator)
 
 loss_g, loss_d_real, loss_d_fake = [], [], []
 start = time()
+img_list = []
 for epoch in range(epochs):
 
 	loss_g_running, loss_d_real_running, loss_d_fake_running = 0, 0, 0
@@ -193,12 +194,22 @@ for epoch in range(epochs):
 			fake = generator(fixed_noise).detach().cpu()
 		img_list.append(vutils.make_grid(fake, padding=2, normalize=True))
 
-
+#---------------------------------------------------------
+#---------------------------------------------------------
+#---------------------------------------------------------	
 generator.eval()
-torch.save(generator.state_dict(), 'model/generator.pth')
+torch.save(generator.state_dict(), 'generator.pth')
+print("generator saved.")
+
 fig = plt.figure(figsize=(8,8))
 plt.axis("off")
 ims = [[plt.imshow(np.transpose(i,(1,2,0)), animated=True)] for i in img_list]
 ani = animation.ArtistAnimation(fig, ims, interval=1000, repeat_delay=1000, blit=True)
+plt.show()
+
 HTML(ani.to_jshtml())
 
+plt.figure(figsize=(15,15))
+plt.axis("off")
+plt.imshow(np.transpose(img_list[-1],(1,2,0)))
+plt.show()
