@@ -50,8 +50,8 @@ class Generator(nn.Module):
 		self.main = nn.Sequential(
 			nn.Linear(latent_dim, 256),
 			nn.LeakyReLU(),
-			nn.BatchNorm1d(256),
-			
+            nn.BatchNorm1d(256),
+            
 			nn.Linear(256, 512),
 			nn.LeakyReLU(),
 			nn.BatchNorm1d(512),
@@ -80,15 +80,15 @@ class  Discriminator(nn.Module):
 		self.main = nn.Sequential(
 			nn.Linear(input_dim, 1024),
 			nn.LeakyReLU(),
-			#nn.BatchNorm1d(1024),#nn.Dropout(0.3),
+			nn.Dropout(0.3),
 						
 			nn.Linear(1024, 512),
 			nn.LeakyReLU(),
-			#nn.BatchNorm1d(512), #nn.Dropout(0.3),
+			nn.Dropout(0.3),
 						
 			nn.Linear(512, 256),
 			nn.LeakyReLU(),
-			#nn.BatchNorm1d(256), #nn.Dropout(0.3),
+			nn.Dropout(0.3),
 						
 			nn.Linear(256, output_dim),
 			nn.Sigmoid()
@@ -97,9 +97,6 @@ class  Discriminator(nn.Module):
 
 	def forward(self, input_tensor):
 		i = input_tensor.view(input_tensor.size(0), -1)
-		#print(i.size())
-		#input_tensor = input_tensor.view(batch_size, -1)
-		#print(input_tensor.size())
 		intermediate = self.main(i)
 		return intermediate
 
@@ -110,7 +107,7 @@ class  Discriminator(nn.Module):
 
 
 class VanillaGAN():
-	def __init__(self, generator, discriminator, lr_d=0.0002, lr_g=0.001):
+	def __init__(self, generator, discriminator, lr_d=0.0004, lr_g=0.0004):
 		self.generator = generator.to(DEVICE)
 		self.discriminator = discriminator.to(DEVICE)
 		self.criterion = nn.BCELoss()
@@ -139,9 +136,7 @@ class VanillaGAN():
 
 	def train_step_discriminator(self, images):
 		self.discriminator.zero_grad()
-		#print(images.size())
 		real_samples = images.to(DEVICE)
-		#print(real_samples.size())
 		pred_real = self.discriminator(real_samples)
 		loss_real = self.criterion(pred_real, self.target_ones)
 
@@ -195,7 +190,7 @@ for epoch in range(epochs):
 			f" Df={loss_d_fake[-1]:.3f}")
 
 	if (epoch % 500 == 0) or ((epoch == epochs-1) and (i == len(data_loader)-1)):
-		fixed_noise = create_noise(batch_size)
+		fixed_noise = create_noise(64)
 		with torch.no_grad():
 			fake = generator(fixed_noise).detach().cpu()
 			fake = fake.view(fake.size(0), colour, image_size, image_size)
@@ -208,11 +203,11 @@ generator.eval()
 torch.save(generator.state_dict(), 'generator.pth')
 print("generator saved.")
 
+
 fig = plt.figure(figsize=(8,8))
 plt.axis("off")
 ims = [[plt.imshow(np.transpose(i,(1,2,0)), animated=True)] for i in img_list]
 ani = animation.ArtistAnimation(fig, ims, interval=1000, repeat_delay=1000, blit=True)
-plt.savefig("images1")
 plt.show()
 
 HTML(ani.to_jshtml())
@@ -220,4 +215,4 @@ HTML(ani.to_jshtml())
 plt.figure(figsize=(15,15))
 plt.axis("off")
 plt.imshow(np.transpose(img_list[-1],(1,2,0)))
-plt.savefig("images")
+plt.savefig("generated_images")
