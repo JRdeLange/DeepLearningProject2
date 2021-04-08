@@ -1,0 +1,11 @@
+#!/bin/bash
+#SBATCH --time=3-00:00:00
+#SBATCH --partition=gpu
+#SBATCH --gres=gpu:1
+#SBATCH --mem=8000
+
+module load Python
+module load PyTorch
+module load Boost
+
+python train_pixelsnail.py /data/s3332403/lmdb256
